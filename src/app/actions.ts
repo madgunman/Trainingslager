@@ -5,6 +5,7 @@ import { and, asc, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getDb } from "@/lib/db";
+import { findAllowedPlayer } from "@/lib/allowed-players";
 import { getSettings, normalizeNameKey } from "@/lib/seed";
 import {
   availability,
@@ -23,13 +24,11 @@ export async function loginPlayer(
   formData: FormData,
 ): Promise<ActionResult> {
   const inviteCode = String(formData.get("inviteCode") || "").trim();
-  const name = String(formData.get("name") || "").trim();
+  const firstName = String(formData.get("firstName") || "").trim();
+  const lastName = String(formData.get("lastName") || "").trim();
 
-  if (!inviteCode || !name) {
-    return { ok: false, error: "Bitte Einladungscode und Namen eingeben." };
-  }
-  if (name.length < 2) {
-    return { ok: false, error: "Der Name ist zu kurz." };
+  if (!inviteCode || !firstName || !lastName) {
+    return { ok: false, error: "Bitte Einladungscode, Vor- und Nachname eingeben." };
   }
 
   const db = getDb();
@@ -38,12 +37,17 @@ export async function loginPlayer(
     return { ok: false, error: "Ungültiger Einladungscode." };
   }
 
-  const nameKey = normalizeNameKey(name);
+  const allowedName = findAllowedPlayer(firstName, lastName);
+  if (!allowedName) {
+    return { ok: false, error: "Spieler/in nicht gefunden" };
+  }
+
+  const nameKey = normalizeNameKey(allowedName);
   let player = db.select().from(players).where(eq(players.nameKey, nameKey)).get();
   if (!player) {
     const inserted = db
       .insert(players)
-      .values({ name: name.trim(), nameKey })
+      .values({ name: allowedName, nameKey })
       .returning()
       .get();
     player = inserted;

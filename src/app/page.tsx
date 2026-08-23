@@ -34,7 +34,7 @@ export default async function HomePage() {
         <div className="hero-panel">
           <h2>Spieler-Login</h2>
           <p className="muted" style={{ marginBottom: "0.85rem" }}>
-            Mit dem Einladungscode vom Trainer und deinem Namen anmelden.
+            Mit dem Einladungscode vom Trainer und deinem Vor- und Nachnamen anmelden.
           </p>
           <LoginForm />
           <p className="muted" style={{ marginTop: "1rem", fontSize: "0.85rem" }}>

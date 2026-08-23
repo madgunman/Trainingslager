@@ -127,7 +127,7 @@ a {
   color: white;
   background:
     linear-gradient(180deg, rgba(17, 17, 17, 0.45), rgba(17, 17, 17, 0.88)),
-    #1a1508 url("/brand/hero.jpg") center 35% / cover no-repeat;
+    #1a1508 url("/brand/hero.jpg") center 45% / cover no-repeat;
   animation: hero-in 700ms ease-out both;
 }
 
@@ -200,7 +200,7 @@ a {
   color: var(--psv-yellow);
 }
 
-.hero p {
+.hero-content p {
   margin: 0 0 1.5rem;
   color: rgba(255, 255, 255, 0.88);
   font-size: 1.05rem;
@@ -224,6 +224,7 @@ a {
   margin: 0 0 0.85rem;
   font-family: var(--font-display), sans-serif;
   font-size: 1.2rem;
+  color: var(--psv-ink);
 }
 
 .section {

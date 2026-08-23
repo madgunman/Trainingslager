@@ -15,20 +15,31 @@ export function LoginForm() {
         <input
           name="inviteCode"
           autoComplete="off"
-          placeholder="z. B. POSTWEEKEND"
           required
         />
       </label>
-      <label className="field">
-        <span>Dein Name</span>
-        <input
-          name="name"
-          autoComplete="name"
-          placeholder="Vor- und Nachname"
-          required
-          minLength={2}
-        />
-      </label>
+      <div className="field-row">
+        <label className="field">
+          <span>Vorname</span>
+          <input
+            name="firstName"
+            autoComplete="given-name"
+            placeholder="Vorname"
+            required
+            minLength={1}
+          />
+        </label>
+        <label className="field">
+          <span>Nachname</span>
+          <input
+            name="lastName"
+            autoComplete="family-name"
+            placeholder="Nachname"
+            required
+            minLength={1}
+          />
+        </label>
+      </div>
       {state && !state.ok ? <p className="form-error">{state.error}</p> : null}
       <button type="submit" className="btn-primary" disabled={pending}>
         {pending ? "Wird geprüft…" : "Zum Plan"}
