@@ -5,7 +5,7 @@ import { AvailabilityButtons } from "@/components/AvailabilityButtons";
 import { ExerciseRequestForm } from "@/components/ExerciseRequestForm";
 import { SiteHeader } from "@/components/SiteHeader";
 import { getDb } from "@/lib/db";
-import { formatSessionDay, formatSessionTime } from "@/lib/format";
+import { dayPartLabels, formatSessionDay } from "@/lib/format";
 import { availability, exerciseRequests, sessions } from "@/lib/schema";
 import { getSettings } from "@/lib/seed";
 import { requirePlayer } from "@/lib/session";
@@ -19,7 +19,7 @@ export default async function PlanPage() {
   const allSessions = db
     .select()
     .from(sessions)
-    .orderBy(asc(sessions.sortOrder), asc(sessions.startsAt))
+    .orderBy(asc(sessions.sortOrder), asc(sessions.sessionDate))
     .all();
   const myAvailability = db
     .select()
@@ -45,21 +45,24 @@ export default async function PlanPage() {
       <main className="page-shell">
         <section className="section">
           <div className="section-head">
-            <h2>Zeitplan</h2>
-            <p>Melde dich für jede Einheit verbindlich an oder ab.</p>
+            <h2>Verfügbarkeit</h2>
+            <p>
+              Sag Bescheid, an welchen Tageszeiten du da bist. Genaue Uhrzeiten und
+              mögliche Gruppen folgen später.
+            </p>
           </div>
           <div className="session-list">
             {allSessions.length === 0 ? (
-              <p className="muted">Noch keine Einheiten eingetragen.</p>
+              <p className="muted">Noch keine Zeitslots eingetragen.</p>
             ) : (
               allSessions.map((session) => (
                 <article key={session.id} className="session-row">
                   <div className="session-meta">
-                    <p className="session-day">{formatSessionDay(session.startsAt)}</p>
-                    <h3 className="session-title">{session.title}</h3>
-                    <p className="session-time">
-                      {formatSessionTime(session.startsAt, session.endsAt)}
-                    </p>
+                    <p className="session-day">{formatSessionDay(session.sessionDate)}</p>
+                    <h3 className="session-title">{dayPartLabels[session.dayPart]}</h3>
+                    {session.title && session.title !== dayPartLabels[session.dayPart] ? (
+                      <p className="session-time">{session.title}</p>
+                    ) : null}
                     <p className="session-location">{session.location}</p>
                     {session.notes ? (
                       <p className="session-notes">{session.notes}</p>

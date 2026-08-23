@@ -4,7 +4,7 @@ import { deleteSession } from "@/app/actions";
 import { SessionEditor, SettingsForm } from "@/components/AdminForms";
 import { SiteHeader } from "@/components/SiteHeader";
 import { getDb } from "@/lib/db";
-import { formatSessionDay, formatSessionTime, statusLabels } from "@/lib/format";
+import { formatSessionSlot, statusLabels } from "@/lib/format";
 import {
   availability,
   exerciseRequests,
@@ -23,7 +23,7 @@ export default async function AdminPage() {
   const allSessions = db
     .select()
     .from(sessions)
-    .orderBy(asc(sessions.sortOrder), asc(sessions.startsAt))
+    .orderBy(asc(sessions.sortOrder), asc(sessions.sessionDate))
     .all();
   const allPlayers = db.select().from(players).orderBy(asc(players.name)).all();
   const allAvailability = db.select().from(availability).all();
@@ -60,7 +60,7 @@ export default async function AdminPage() {
               />
             </div>
             <div className="admin-panel">
-              <h3>Neue Einheit</h3>
+              <h3>Neuer Zeitslot</h3>
               <SessionEditor />
             </div>
           </div>
@@ -68,18 +68,17 @@ export default async function AdminPage() {
 
         <section className="section">
           <div className="section-head">
-            <h2>Einheiten</h2>
-            <p>{allSessions.length} Einheiten im Plan</p>
+            <h2>Zeitslots</h2>
+            <p>{allSessions.length} Tageszeiten im Plan</p>
           </div>
           <div className="admin-stack">
             {allSessions.map((session) => {
               const responses = allAvailability.filter((a) => a.sessionId === session.id);
               return (
                 <article key={session.id} className="admin-panel">
-                  <h3>{session.title}</h3>
+                  <h3>{formatSessionSlot(session.sessionDate, session.dayPart)}</h3>
                   <p className="muted">
-                    {formatSessionDay(session.startsAt)} ·{" "}
-                    {formatSessionTime(session.startsAt, session.endsAt)} · {session.location}
+                    {session.title} · {session.location}
                   </p>
                   {session.notes ? <p className="muted">{session.notes}</p> : null}
 
@@ -116,7 +115,7 @@ export default async function AdminPage() {
 
                   <details>
                     <summary style={{ cursor: "pointer", fontWeight: 600 }}>
-                      Einheit bearbeiten
+                      Slot bearbeiten
                     </summary>
                     <div style={{ marginTop: "0.85rem" }}>
                       <SessionEditor session={session} />
@@ -127,7 +126,7 @@ export default async function AdminPage() {
                     style={{ marginTop: "0.75rem" }}
                   >
                     <button type="submit" className="btn-danger">
-                      Einheit löschen
+                      Slot löschen
                     </button>
                   </form>
                 </article>

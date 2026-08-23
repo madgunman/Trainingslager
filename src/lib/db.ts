@@ -24,6 +24,10 @@ function getSqlite() {
   return sqlite;
 }
 
+function tableColumns(sqlite: Database.Database, table: string) {
+  return sqlite.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>;
+}
+
 function migrate(sqlite: Database.Database) {
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS settings (
@@ -41,25 +45,6 @@ function migrate(sqlite: Database.Database) {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
-    CREATE TABLE IF NOT EXISTS sessions (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      title TEXT NOT NULL,
-      starts_at TEXT NOT NULL,
-      ends_at TEXT NOT NULL,
-      location TEXT NOT NULL DEFAULT 'Halle am Kristanplatz',
-      notes TEXT NOT NULL DEFAULT '',
-      sort_order INTEGER NOT NULL DEFAULT 0
-    );
-
-    CREATE TABLE IF NOT EXISTS availability (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      player_id INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE,
-      session_id INTEGER NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
-      status TEXT NOT NULL CHECK (status IN ('yes', 'no', 'maybe')),
-      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-      UNIQUE(player_id, session_id)
-    );
-
     CREATE TABLE IF NOT EXISTS exercise_requests (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       player_id INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE,
@@ -67,6 +52,47 @@ function migrate(sqlite: Database.Database) {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
   `);
+
+  const sessionCols = tableColumns(sqlite, "sessions").map((c) => c.name);
+  const needsSessionRebuild =
+    sessionCols.length === 0 || !sessionCols.includes("day_part") || !sessionCols.includes("session_date");
+
+  if (needsSessionRebuild) {
+    sqlite.exec(`
+      DROP TABLE IF EXISTS availability;
+      DROP TABLE IF EXISTS sessions;
+
+      CREATE TABLE sessions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        session_date TEXT NOT NULL,
+        day_part TEXT NOT NULL CHECK (day_part IN ('morning', 'afternoon', 'evening')),
+        location TEXT NOT NULL DEFAULT 'Halle am Kristanplatz',
+        notes TEXT NOT NULL DEFAULT '',
+        sort_order INTEGER NOT NULL DEFAULT 0
+      );
+
+      CREATE TABLE availability (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        player_id INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+        session_id INTEGER NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+        status TEXT NOT NULL CHECK (status IN ('yes', 'no', 'maybe')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+        UNIQUE(player_id, session_id)
+      );
+    `);
+  } else {
+    sqlite.exec(`
+      CREATE TABLE IF NOT EXISTS availability (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        player_id INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+        session_id INTEGER NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+        status TEXT NOT NULL CHECK (status IN ('yes', 'no', 'maybe')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+        UNIQUE(player_id, session_id)
+      );
+    `);
+  }
 }
 
 export function getDb() {

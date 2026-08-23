@@ -1,19 +1,25 @@
 import { de } from "date-fns/locale";
 import { format, parseISO } from "date-fns";
+import type { DayPart } from "@/lib/schema";
 
-export function formatSessionDay(iso: string) {
-  return format(parseISO(iso), "EEEE, d. MMMM", { locale: de });
+export const dayPartLabels: Record<DayPart, string> = {
+  morning: "Vormittag",
+  afternoon: "Nachmittag",
+  evening: "Abend",
+};
+
+export const dayPartOrder: Record<DayPart, number> = {
+  morning: 1,
+  afternoon: 2,
+  evening: 3,
+};
+
+export function formatSessionDay(dateIso: string) {
+  return format(parseISO(dateIso), "EEEE, d. MMMM", { locale: de });
 }
 
-export function formatSessionTime(startIso: string, endIso: string) {
-  const start = format(parseISO(startIso), "HH:mm", { locale: de });
-  const end = format(parseISO(endIso), "HH:mm", { locale: de });
-  return `${start}–${end} Uhr`;
-}
-
-export function formatDateTimeLocal(iso: string) {
-  // datetime-local expects YYYY-MM-DDTHH:mm
-  return iso.slice(0, 16);
+export function formatSessionSlot(dateIso: string, dayPart: DayPart) {
+  return `${formatSessionDay(dateIso)} · ${dayPartLabels[dayPart]}`;
 }
 
 export const statusLabels = {

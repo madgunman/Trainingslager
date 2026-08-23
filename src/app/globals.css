@@ -384,7 +384,8 @@ a {
 }
 
 input,
-textarea {
+textarea,
+select {
   width: 100%;
   border: 1px solid var(--psv-line);
   background: #fff;
@@ -395,7 +396,8 @@ textarea {
 }
 
 input:focus,
-textarea:focus {
+textarea:focus,
+select:focus {
   outline: 2px solid var(--psv-yellow);
   outline-offset: 1px;
 }

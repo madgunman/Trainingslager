@@ -1,6 +1,9 @@
 import { sql } from "drizzle-orm";
 import { integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
+export const DAY_PARTS = ["morning", "afternoon", "evening"] as const;
+export type DayPart = (typeof DAY_PARTS)[number];
+
 export const settings = sqliteTable("settings", {
   id: integer("id").primaryKey(),
   inviteCode: text("invite_code").notNull(),
@@ -21,8 +24,8 @@ export const players = sqliteTable("players", {
 export const sessions = sqliteTable("sessions", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   title: text("title").notNull(),
-  startsAt: text("starts_at").notNull(),
-  endsAt: text("ends_at").notNull(),
+  sessionDate: text("session_date").notNull(),
+  dayPart: text("day_part", { enum: ["morning", "afternoon", "evening"] }).notNull(),
   location: text("location").notNull().default("Halle am Kristanplatz"),
   notes: text("notes").notNull().default(""),
   sortOrder: integer("sort_order").notNull().default(0),

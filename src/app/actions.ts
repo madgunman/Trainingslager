@@ -219,24 +219,25 @@ export async function upsertSession(
   if (!admin) return { ok: false, error: "Keine Berechtigung." };
 
   const idRaw = String(formData.get("id") || "");
-  const title = String(formData.get("title") || "").trim();
-  const startsAt = String(formData.get("startsAt") || "").trim();
-  const endsAt = String(formData.get("endsAt") || "").trim();
+  const title = String(formData.get("title") || "").trim() || "Training";
+  const sessionDate = String(formData.get("sessionDate") || "").trim();
+  const dayPartRaw = String(formData.get("dayPart") || "").trim();
   const location = String(formData.get("location") || "").trim() || "Halle am Kristanplatz";
   const notes = String(formData.get("notes") || "").trim();
   const sortOrder = Number(formData.get("sortOrder") || 0);
 
-  if (!title || !startsAt || !endsAt) {
-    return { ok: false, error: "Titel und Zeiten sind Pflicht." };
+  if (!sessionDate || !["morning", "afternoon", "evening"].includes(dayPartRaw)) {
+    return { ok: false, error: "Datum und Tageszeit sind Pflicht." };
   }
 
+  const dayPart = dayPartRaw as "morning" | "afternoon" | "evening";
   const db = getDb();
   if (idRaw) {
     db.update(sessions)
       .set({
         title,
-        startsAt,
-        endsAt,
+        sessionDate,
+        dayPart,
         location,
         notes,
         sortOrder: Number.isFinite(sortOrder) ? sortOrder : 0,
@@ -247,8 +248,8 @@ export async function upsertSession(
     db.insert(sessions)
       .values({
         title,
-        startsAt,
-        endsAt,
+        sessionDate,
+        dayPart,
         location,
         notes,
         sortOrder: Number.isFinite(sortOrder) ? sortOrder : 0,
@@ -273,7 +274,7 @@ export async function deleteSession(id: number) {
 
 export async function getPlanData(playerId: number) {
   const db = getDb();
-  const allSessions = db.select().from(sessions).orderBy(asc(sessions.sortOrder), asc(sessions.startsAt)).all();
+  const allSessions = db.select().from(sessions).orderBy(asc(sessions.sortOrder), asc(sessions.sessionDate)).all();
   const myAvailability = db
     .select()
     .from(availability)

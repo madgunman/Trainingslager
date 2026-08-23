@@ -6,8 +6,9 @@ import {
   upsertSession,
   type ActionResult,
 } from "@/app/actions";
-import { formatDateTimeLocal } from "@/lib/format";
-import type { Session } from "@/lib/schema";
+import { dayPartLabels } from "@/lib/format";
+import type { DayPart, Session } from "@/lib/schema";
+import { DAY_PARTS } from "@/lib/schema";
 
 const initial: ActionResult | null = null;
 
@@ -56,27 +57,32 @@ export function SessionEditor({ session }: { session?: Session }) {
     <form action={action} className="admin-card-form">
       {session ? <input type="hidden" name="id" value={session.id} /> : null}
       <label className="field">
-        <span>Titel der Einheit</span>
-        <input name="title" defaultValue={session?.title ?? ""} required />
+        <span>Kurzbeschreibung (optional)</span>
+        <input name="title" defaultValue={session?.title ?? "Training"} />
       </label>
       <div className="field-row">
         <label className="field">
-          <span>Beginn</span>
+          <span>Datum</span>
           <input
-            type="datetime-local"
-            name="startsAt"
-            defaultValue={session ? formatDateTimeLocal(session.startsAt) : ""}
+            type="date"
+            name="sessionDate"
+            defaultValue={session?.sessionDate ?? "2026-08-28"}
             required
           />
         </label>
         <label className="field">
-          <span>Ende</span>
-          <input
-            type="datetime-local"
-            name="endsAt"
-            defaultValue={session ? formatDateTimeLocal(session.endsAt) : ""}
+          <span>Tageszeit</span>
+          <select
+            name="dayPart"
+            defaultValue={session?.dayPart ?? "afternoon"}
             required
-          />
+          >
+            {DAY_PARTS.map((part: DayPart) => (
+              <option key={part} value={part}>
+                {dayPartLabels[part]}
+              </option>
+            ))}
+          </select>
         </label>
       </div>
       <label className="field">
@@ -99,9 +105,9 @@ export function SessionEditor({ session }: { session?: Session }) {
         />
       </label>
       {state && !state.ok ? <p className="form-error">{state.error}</p> : null}
-      {state?.ok ? <p className="form-ok">Einheit gespeichert.</p> : null}
+      {state?.ok ? <p className="form-ok">Zeitslot gespeichert.</p> : null}
       <button type="submit" className="btn-primary" disabled={pending}>
-        {pending ? "Speichern…" : session ? "Einheit aktualisieren" : "Einheit anlegen"}
+        {pending ? "Speichern…" : session ? "Slot aktualisieren" : "Slot anlegen"}
       </button>
     </form>
   );
