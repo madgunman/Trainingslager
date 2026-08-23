@@ -77,9 +77,7 @@ export default async function AdminPage() {
               return (
                 <article key={session.id} className="admin-panel">
                   <h3>{formatSessionSlot(session.sessionDate, session.dayPart)}</h3>
-                  <p className="muted">
-                    {session.title} · {session.location}
-                  </p>
+                  <p className="muted">{session.title}</p>
                   {session.notes ? <p className="muted">{session.notes}</p> : null}
 
                   <div style={{ margin: "1rem 0" }}>

@@ -226,7 +226,6 @@ export async function upsertSession(
   const title = String(formData.get("title") || "").trim() || "Training";
   const sessionDate = String(formData.get("sessionDate") || "").trim();
   const dayPartRaw = String(formData.get("dayPart") || "").trim();
-  const location = String(formData.get("location") || "").trim() || "Halle am Kristanplatz";
   const notes = String(formData.get("notes") || "").trim();
   const sortOrder = Number(formData.get("sortOrder") || 0);
 
@@ -242,7 +241,6 @@ export async function upsertSession(
         title,
         sessionDate,
         dayPart,
-        location,
         notes,
         sortOrder: Number.isFinite(sortOrder) ? sortOrder : 0,
       })
@@ -254,7 +252,6 @@ export async function upsertSession(
         title,
         sessionDate,
         dayPart,
-        location,
         notes,
         sortOrder: Number.isFinite(sortOrder) ? sortOrder : 0,
       })

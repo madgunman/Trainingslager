@@ -63,7 +63,6 @@ export default async function PlanPage() {
                     {session.title && session.title !== dayPartLabels[session.dayPart] ? (
                       <p className="session-time">{session.title}</p>
                     ) : null}
-                    <p className="session-location">{session.location}</p>
                     {session.notes ? (
                       <p className="session-notes">{session.notes}</p>
                     ) : null}

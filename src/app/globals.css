@@ -287,7 +287,6 @@ a {
 }
 
 .session-time,
-.session-location,
 .session-notes {
   margin: 0;
   color: var(--psv-muted);

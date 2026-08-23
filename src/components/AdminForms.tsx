@@ -86,13 +86,6 @@ export function SessionEditor({ session }: { session?: Session }) {
         </label>
       </div>
       <label className="field">
-        <span>Ort</span>
-        <input
-          name="location"
-          defaultValue={session?.location ?? "Halle am Kristanplatz"}
-        />
-      </label>
-      <label className="field">
         <span>Notizen</span>
         <textarea name="notes" rows={2} defaultValue={session?.notes ?? ""} />
       </label>
