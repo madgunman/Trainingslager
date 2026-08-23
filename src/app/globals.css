@@ -14,8 +14,6 @@
   --psv-maybe: #9a6700;
   --background: var(--psv-surface);
   --foreground: var(--psv-ink);
-  --font-display: var(--font-display);
-  --font-body: var(--font-body);
 }
 
 @theme inline {
@@ -41,7 +39,6 @@ body {
     radial-gradient(1200px 600px at 10% -10%, rgba(252, 195, 16, 0.28), transparent 55%),
     radial-gradient(900px 500px at 100% 0%, rgba(17, 17, 17, 0.08), transparent 50%),
     linear-gradient(180deg, #f7f8fb 0%, #eceef3 100%);
-  background-attachment: fixed;
 }
 
 a {
@@ -119,6 +116,7 @@ a {
 
 .hero {
   position: relative;
+  isolation: isolate;
   overflow: hidden;
   margin: 1.25rem 0 2rem;
   border-radius: 0;
@@ -127,14 +125,14 @@ a {
   align-items: end;
   padding: 2rem 1.25rem 2.25rem;
   color: white;
-  background: #111;
+  background:
+    linear-gradient(180deg, rgba(17, 17, 17, 0.45), rgba(17, 17, 17, 0.88)),
+    #1a1508 url("/brand/hero.jpg") center 35% / cover no-repeat;
   animation: hero-in 700ms ease-out both;
 }
 
 .hero-photo {
-  object-fit: cover;
-  object-position: center 35%;
-  z-index: 0;
+  display: none;
 }
 
 .hero::before {

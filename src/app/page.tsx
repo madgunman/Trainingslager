@@ -17,14 +17,6 @@ export default async function HomePage() {
   return (
     <main className="page-shell">
       <section className="hero">
-        <Image
-          src="/brand/hero.jpg"
-          alt="Center Court Halle am Kristanplatz"
-          fill
-          priority
-          className="hero-photo"
-          sizes="100vw"
-        />
         <div className="hero-content">
           <div className="hero-brand">
             <Image
