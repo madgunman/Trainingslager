@@ -592,6 +592,48 @@ select:focus {
   overflow: visible;
 }
 
+.agenda-kind-badge {
+  display: inline-block;
+  width: fit-content;
+  margin: 0 0 0.15rem;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--psv-ink);
+  background: var(--psv-yellow);
+  border: 1px solid var(--psv-line);
+}
+
+.agenda-card--travel,
+.agenda-card--meal,
+.agenda-card--wellness,
+.agenda-card--warmup,
+.agenda-card--other {
+  background: color-mix(in srgb, var(--psv-card) 92%, var(--psv-muted));
+  border-color: color-mix(in srgb, var(--psv-line) 80%, transparent);
+}
+
+.agenda-card--travel .agenda-time,
+.agenda-card--meal .agenda-time,
+.agenda-card--wellness .agenda-time,
+.agenda-card--warmup .agenda-time,
+.agenda-card--other .agenda-time {
+  font-size: clamp(1.05rem, 3.2vw, 1.35rem);
+  font-weight: 600;
+}
+
+.agenda-card--travel .agenda-topic,
+.agenda-card--meal .agenda-topic {
+  font-size: 0.98rem;
+  color: var(--psv-muted);
+}
+
+.admin-kind-badge {
+  flex-shrink: 0;
+}
+
 .agenda-meta {
   display: grid;
   gap: 0.2rem;

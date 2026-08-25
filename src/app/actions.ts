@@ -14,6 +14,8 @@ import {
   sessions,
   settings,
   type AvailabilityStatus,
+  SESSION_KINDS,
+  type SessionKind,
 } from "@/lib/schema";
 import { getSession, requireAdmin, requirePlayer } from "@/lib/session";
 
@@ -257,6 +259,7 @@ export async function upsertSession(
   const title = String(formData.get("title") || "").trim() || "Training";
   const sessionDate = String(formData.get("sessionDate") || "").trim();
   const dayPartRaw = String(formData.get("dayPart") || "").trim();
+  const sessionKindRaw = String(formData.get("sessionKind") || "training").trim();
   const notes = String(formData.get("notes") || "").trim();
   const sortOrder = Number(formData.get("sortOrder") || 0);
   const agendaStartRaw = String(formData.get("agendaStartTime") || "").trim();
@@ -267,8 +270,12 @@ export async function upsertSession(
   if (!sessionDate || !["morning", "afternoon", "evening"].includes(dayPartRaw)) {
     return { ok: false, error: "Datum und Tageszeit sind Pflicht." };
   }
+  if (!(SESSION_KINDS as readonly string[]).includes(sessionKindRaw)) {
+    return { ok: false, error: "Ungültige Slot-Art." };
+  }
 
   const dayPart = dayPartRaw as "morning" | "afternoon" | "evening";
+  const sessionKind = sessionKindRaw as SessionKind;
   const db = getDb();
   if (idRaw) {
     db.update(sessions)
@@ -276,6 +283,7 @@ export async function upsertSession(
         title,
         sessionDate,
         dayPart,
+        sessionKind,
         notes,
         sortOrder: Number.isFinite(sortOrder) ? sortOrder : 0,
         agendaStartTime,
@@ -289,6 +297,7 @@ export async function upsertSession(
         title,
         sessionDate,
         dayPart,
+        sessionKind,
         notes,
         sortOrder: Number.isFinite(sortOrder) ? sortOrder : 0,
         agendaStartTime,

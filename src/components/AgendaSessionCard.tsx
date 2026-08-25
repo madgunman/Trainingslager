@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { AvailabilityButtons } from "@/components/AvailabilityButtons";
 import { statusLabels } from "@/lib/format";
+import type { AvailabilityStatus, SessionKind } from "@/lib/schema";
 
 type RsvpStatus = "yes" | "maybe" | "no";
 
@@ -9,6 +11,8 @@ const CHIP_ORDER: RsvpStatus[] = ["yes", "maybe", "no"];
 
 type AgendaSessionCardProps = {
   sessionId: number;
+  sessionKind: SessionKind;
+  kindLabel: string;
   dateLabel: string;
   timeRange: string | null;
   topic: string;
@@ -18,6 +22,8 @@ type AgendaSessionCardProps = {
     no: string[];
   };
   currentPlayerName?: string;
+  currentPlayerStatus?: AvailabilityStatus;
+  showOwnRsvpControls?: boolean;
 };
 
 function useFineHover() {
@@ -36,11 +42,15 @@ function useFineHover() {
 
 export function AgendaSessionCard({
   sessionId,
+  sessionKind,
+  kindLabel,
   dateLabel,
   timeRange,
   topic,
   names,
   currentPlayerName,
+  currentPlayerStatus,
+  showOwnRsvpControls = false,
 }: AgendaSessionCardProps) {
   const [openStatus, setOpenStatus] = useState<RsvpStatus | null>(null);
   const rootRef = useRef<HTMLElement>(null);
@@ -65,8 +75,14 @@ export function AgendaSessionCard({
   }, []);
 
   return (
-    <article ref={rootRef} className="agenda-card session-row">
+    <article
+      ref={rootRef}
+      className={`agenda-card session-row agenda-card--${sessionKind}`}
+    >
       <div className="agenda-meta session-meta">
+        {sessionKind !== "training" ? (
+          <span className="agenda-kind-badge">{kindLabel}</span>
+        ) : null}
         <p className="agenda-date session-day">{dateLabel}</p>
         {timeRange ? (
           <p className="agenda-time session-time">{timeRange}</p>
@@ -75,6 +91,10 @@ export function AgendaSessionCard({
         )}
         <h3 className="agenda-topic session-title">{topic}</h3>
       </div>
+
+      {showOwnRsvpControls ? (
+        <AvailabilityButtons sessionId={sessionId} current={currentPlayerStatus} />
+      ) : null}
 
       <div className="agenda-chips">
         {CHIP_ORDER.map((status) => {
@@ -106,7 +126,6 @@ export function AgendaSessionCard({
                 aria-expanded={isOpen}
                 aria-controls={popoverId}
                 onClick={() => {
-                  // Touch / coarse pointers: tap toggles. Fine hover uses hover/focus.
                   if (!fineHover) {
                     setOpenStatus((prev) => (prev === status ? null : status));
                   }

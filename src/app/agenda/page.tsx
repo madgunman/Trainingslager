@@ -6,6 +6,8 @@ import {
   dayPartOrder,
   formatAgendaTimeRange,
   formatSessionDay,
+  isTrainingSession,
+  sessionKindLabels,
 } from "@/lib/format";
 import {
   availability,
@@ -63,7 +65,10 @@ export default async function AgendaPage() {
               Uhrzeiten und Themen.
             </p>
           ) : (
-            <PublishedAgenda currentPlayerName={auth.playerName} />
+            <PublishedAgenda
+              currentPlayerName={auth.playerName}
+              currentPlayerId={auth.playerId}
+            />
           )}
         </section>
       </main>
@@ -71,13 +76,25 @@ export default async function AgendaPage() {
   );
 }
 
-function PublishedAgenda({ currentPlayerName }: { currentPlayerName: string }) {
+function PublishedAgenda({
+  currentPlayerName,
+  currentPlayerId,
+}: {
+  currentPlayerName: string;
+  currentPlayerId: number;
+}) {
   const db = getDb();
   const allSessions = db.select().from(sessions).all();
   const allPlayers = db.select().from(players).all();
   const allAvailability = db.select().from(availability).all();
 
   const playerNameById = new Map(allPlayers.map((p) => [p.id, p.name]));
+  const myStatusBySession = new Map<number, AvailabilityStatus>();
+  for (const row of allAvailability) {
+    if (row.playerId === currentPlayerId) {
+      myStatusBySession.set(row.sessionId, row.status);
+    }
+  }
 
   const namesBySession = new Map<number, NameBuckets>();
   for (const session of allSessions) {
@@ -124,10 +141,13 @@ function PublishedAgenda({ currentPlayerName }: { currentPlayerName: string }) {
       {sorted.map((session) => {
         const topic =
           session.notes.trim() !== "" ? session.notes.trim() : session.title;
+        const kind = session.sessionKind;
         return (
           <AgendaSessionCard
             key={session.id}
             sessionId={session.id}
+            sessionKind={kind}
+            kindLabel={sessionKindLabels[kind]}
             dateLabel={formatSessionDay(session.sessionDate)}
             timeRange={formatAgendaTimeRange(
               session.agendaStartTime,
@@ -136,6 +156,8 @@ function PublishedAgenda({ currentPlayerName }: { currentPlayerName: string }) {
             topic={topic}
             names={namesBySession.get(session.id) ?? emptyBuckets()}
             currentPlayerName={currentPlayerName}
+            currentPlayerStatus={myStatusBySession.get(session.id)}
+            showOwnRsvpControls={!isTrainingSession(kind)}
           />
         );
       })}

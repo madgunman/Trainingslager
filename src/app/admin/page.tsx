@@ -4,7 +4,7 @@ import { deleteSession, publishAgenda, unpublishAgenda } from "@/app/actions";
 import { SessionEditor, SettingsForm } from "@/components/AdminForms";
 import { SiteHeader } from "@/components/SiteHeader";
 import { getDb } from "@/lib/db";
-import { formatSessionDay, formatSessionSlot, statusLabels } from "@/lib/format";
+import { formatSessionDay, formatSessionSlot, isTrainingSession, sessionKindLabels, statusLabels } from "@/lib/format";
 import {
   availability,
   exerciseRequests,
@@ -67,8 +67,9 @@ export default async function AdminPage() {
               <strong>{agendaPublished ? "Veröffentlicht" : "Entwurf"}</strong>
             </p>
             <p className="muted">
-              Das Spieler-Programm zeigt Datum, Uhrzeit und Thema. Veröffentlichen
-              ist auch möglich, wenn noch nicht alle Slots eine Uhrzeit haben.
+              Das Spieler-Programm zeigt Datum, Uhrzeit und Thema für alle Slot-Arten.
+              Trainingsslots zählen zusätzlich zur Verfügbarkeit; optionale Slots (Anreise,
+              Essen, …) nur im Programm.
             </p>
             {allSessions.length === 0 ? (
               <p className="muted">Noch keine Zeitslots für die Vorschau.</p>
@@ -77,9 +78,10 @@ export default async function AdminPage() {
                 {allSessions.map((session) => {
                   const topic =
                     session.notes.trim() !== "" ? session.notes : session.title;
+                  const kindLabel = sessionKindLabels[session.sessionKind];
                   return (
                     <li key={session.id}>
-                      {formatSessionDay(session.sessionDate)} ·{" "}
+                      {kindLabel} · {formatSessionDay(session.sessionDate)} ·{" "}
                       {formatAgendaTimeRange(
                         session.agendaStartTime,
                         session.agendaEndTime,
@@ -123,15 +125,32 @@ export default async function AdminPage() {
         <section className="section">
           <div className="section-head">
             <h2>Zeitslots</h2>
-            <p>{allSessions.length} Tageszeiten im Plan</p>
+            <p>
+              {allSessions.filter((s) => isTrainingSession(s.sessionKind)).length} Trainingsslots
+              · {allSessions.length} Slots gesamt
+            </p>
           </div>
           <div className="admin-stack">
             {allSessions.map((session) => {
               const responses = allAvailability.filter((a) => a.sessionId === session.id);
+              const kindLabel = sessionKindLabels[session.sessionKind];
+              const topic =
+                session.notes.trim() !== "" ? session.notes : session.title;
+              const slotHeading = isTrainingSession(session.sessionKind)
+                ? formatSessionSlot(session.sessionDate, session.dayPart)
+                : `${formatSessionDay(session.sessionDate)} · ${formatAgendaTimeRange(
+                    session.agendaStartTime,
+                    session.agendaEndTime,
+                  )} · ${topic}`;
               return (
                 <article key={session.id} className="admin-panel">
-                  <h3>{formatSessionSlot(session.sessionDate, session.dayPart)}</h3>
-                  <p className="muted">{session.title}</p>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", alignItems: "center" }}>
+                    <span className="pill pill-maybe admin-kind-badge">{kindLabel}</span>
+                    <h3 style={{ margin: 0 }}>{slotHeading}</h3>
+                  </div>
+                  {isTrainingSession(session.sessionKind) ? (
+                    <p className="muted">{session.title}</p>
+                  ) : null}
                   {session.notes ? <p className="muted">{session.notes}</p> : null}
 
                   <div style={{ margin: "1rem 0" }}>

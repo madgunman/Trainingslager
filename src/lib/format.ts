@@ -1,6 +1,19 @@
 import { de } from "date-fns/locale";
 import { format, parseISO } from "date-fns";
-import type { DayPart } from "@/lib/schema";
+import type { DayPart, SessionKind } from "@/lib/schema";
+
+export const sessionKindLabels: Record<SessionKind, string> = {
+  training: "Training",
+  warmup: "Aufwärmen",
+  wellness: "Yoga / Wellness",
+  travel: "Anreise / Reise",
+  meal: "Essen",
+  other: "Sonstiges",
+};
+
+export function isTrainingSession(kind: SessionKind) {
+  return kind === "training";
+}
 
 export const dayPartLabels: Record<DayPart, string> = {
   morning: "Vormittag",

@@ -4,6 +4,16 @@ import { integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core
 export const DAY_PARTS = ["morning", "afternoon", "evening"] as const;
 export type DayPart = (typeof DAY_PARTS)[number];
 
+export const SESSION_KINDS = [
+  "training",
+  "warmup",
+  "wellness",
+  "travel",
+  "meal",
+  "other",
+] as const;
+export type SessionKind = (typeof SESSION_KINDS)[number];
+
 export const settings = sqliteTable("settings", {
   id: integer("id").primaryKey(),
   inviteCode: text("invite_code").notNull(),
@@ -27,6 +37,7 @@ export const sessions = sqliteTable("sessions", {
   title: text("title").notNull(),
   sessionDate: text("session_date").notNull(),
   dayPart: text("day_part", { enum: ["morning", "afternoon", "evening"] }).notNull(),
+  sessionKind: text("session_kind", { enum: SESSION_KINDS }).notNull().default("training"),
   location: text("location").notNull().default("Halle am Kristanplatz"),
   notes: text("notes").notNull().default(""),
   sortOrder: integer("sort_order").notNull().default(0),

@@ -19,6 +19,7 @@ export default async function PlanPage() {
   const allSessions = db
     .select()
     .from(sessions)
+    .where(eq(sessions.sessionKind, "training"))
     .orderBy(asc(sessions.sortOrder), asc(sessions.sessionDate))
     .all();
   const myAvailability = db

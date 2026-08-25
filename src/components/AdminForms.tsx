@@ -1,16 +1,25 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import {
   saveWeekendSettings,
   upsertSession,
   type ActionResult,
 } from "@/app/actions";
-import { dayPartLabels } from "@/lib/format";
-import type { DayPart, Session } from "@/lib/schema";
-import { DAY_PARTS } from "@/lib/schema";
+import { dayPartLabels, sessionKindLabels } from "@/lib/format";
+import type { DayPart, Session, SessionKind } from "@/lib/schema";
+import { DAY_PARTS, SESSION_KINDS } from "@/lib/schema";
 
 const initial: ActionResult | null = null;
+
+const titlePlaceholders: Record<SessionKind, string> = {
+  training: "Training",
+  warmup: "Aufwärmen",
+  wellness: "Yoga",
+  travel: "Anreise",
+  meal: "Mittagessen",
+  other: "",
+};
 
 export function SettingsForm({
   weekendTitle,
@@ -52,13 +61,36 @@ export function SettingsForm({
 
 export function SessionEditor({ session }: { session?: Session }) {
   const [state, action, pending] = useActionState(upsertSession, initial);
+  const [sessionKind, setSessionKind] = useState<SessionKind>(
+    session?.sessionKind ?? "training",
+  );
+  const isTraining = sessionKind === "training";
 
   return (
     <form action={action} className="admin-card-form">
       {session ? <input type="hidden" name="id" value={session.id} /> : null}
       <label className="field">
+        <span>Art</span>
+        <select
+          name="sessionKind"
+          value={sessionKind}
+          onChange={(event) => setSessionKind(event.target.value as SessionKind)}
+          required
+        >
+          {SESSION_KINDS.map((kind) => (
+            <option key={kind} value={kind}>
+              {sessionKindLabels[kind]}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="field">
         <span>Kurzbeschreibung (optional)</span>
-        <input name="title" defaultValue={session?.title ?? "Training"} />
+        <input
+          name="title"
+          defaultValue={session?.title ?? (isTraining ? "Training" : "")}
+          placeholder={titlePlaceholders[sessionKind]}
+        />
       </label>
       <div className="field-row">
         <label className="field">
@@ -70,21 +102,30 @@ export function SessionEditor({ session }: { session?: Session }) {
             required
           />
         </label>
-        <label className="field">
-          <span>Tageszeit</span>
-          <select
-            name="dayPart"
-            defaultValue={session?.dayPart ?? "afternoon"}
-            required
-          >
-            {DAY_PARTS.map((part: DayPart) => (
-              <option key={part} value={part}>
-                {dayPartLabels[part]}
-              </option>
-            ))}
-          </select>
-        </label>
+        {isTraining ? (
+          <label className="field">
+            <span>Tageszeit</span>
+            <select
+              name="dayPart"
+              defaultValue={session?.dayPart ?? "afternoon"}
+              required
+            >
+              {DAY_PARTS.map((part: DayPart) => (
+                <option key={part} value={part}>
+                  {dayPartLabels[part]}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : (
+          <input type="hidden" name="dayPart" value="morning" />
+        )}
       </div>
+      <p className="muted" style={{ margin: 0, fontSize: "0.88rem" }}>
+        {isTraining
+          ? "Trainingsslots erscheinen unter Verfügbarkeit und im Programm."
+          : "Optionale Slots nur im Programm — bitte Agenda Start/Ende setzen."}
+      </p>
       <div className="field-row">
         <label className="field">
           <span>Agenda Start</span>

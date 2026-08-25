@@ -68,6 +68,7 @@ function migrate(sqlite: Database.Database) {
         title TEXT NOT NULL,
         session_date TEXT NOT NULL,
         day_part TEXT NOT NULL CHECK (day_part IN ('morning', 'afternoon', 'evening')),
+        session_kind TEXT NOT NULL DEFAULT 'training' CHECK (session_kind IN ('training', 'warmup', 'wellness', 'travel', 'meal', 'other')),
         location TEXT NOT NULL DEFAULT 'Halle am Kristanplatz',
         notes TEXT NOT NULL DEFAULT '',
         sort_order INTEGER NOT NULL DEFAULT 0,
@@ -104,6 +105,12 @@ function migrate(sqlite: Database.Database) {
   }
   if (!sessionColsAfter.includes("agenda_end_time")) {
     sqlite.exec(`ALTER TABLE sessions ADD COLUMN agenda_end_time TEXT`);
+  }
+  const sessionColsFinal = tableColumns(sqlite, "sessions").map((c) => c.name);
+  if (!sessionColsFinal.includes("session_kind")) {
+    sqlite.exec(
+      `ALTER TABLE sessions ADD COLUMN session_kind TEXT NOT NULL DEFAULT 'training'`,
+    );
   }
 
   const settingsCols = tableColumns(sqlite, "settings").map((c) => c.name);
