@@ -5,8 +5,9 @@ import { AvailabilityButtons } from "@/components/AvailabilityButtons";
 import { ExerciseRequestForm } from "@/components/ExerciseRequestForm";
 import { SiteHeader } from "@/components/SiteHeader";
 import { getDb } from "@/lib/db";
+import { listSessionsInSortOrder } from "@/lib/session-order";
 import { dayPartLabels, formatSessionDay } from "@/lib/format";
-import { availability, exerciseRequests, sessions } from "@/lib/schema";
+import { availability, exerciseRequests } from "@/lib/schema";
 import { getSettings } from "@/lib/seed";
 import { requirePlayer } from "@/lib/session";
 
@@ -16,12 +17,9 @@ export default async function PlanPage() {
 
   const db = getDb();
   const config = getSettings(db);
-  const allSessions = db
-    .select()
-    .from(sessions)
-    .where(eq(sessions.sessionKind, "training"))
-    .orderBy(asc(sessions.sortOrder), asc(sessions.sessionDate))
-    .all();
+  const allSessions = listSessionsInSortOrder(db).filter(
+    (session) => session.sessionKind === "training",
+  );
   const myAvailability = db
     .select()
     .from(availability)

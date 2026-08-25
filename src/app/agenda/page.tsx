@@ -3,7 +3,6 @@ import { AgendaSessionCard } from "@/components/AgendaSessionCard";
 import { SiteHeader } from "@/components/SiteHeader";
 import { getDb } from "@/lib/db";
 import {
-  dayPartOrder,
   formatAgendaTimeRange,
   formatSessionDay,
   isTrainingSession,
@@ -12,11 +11,10 @@ import {
 import {
   availability,
   players,
-  sessions,
   type AvailabilityStatus,
-  type DayPart,
 } from "@/lib/schema";
 import { getSettings } from "@/lib/seed";
+import { listSessionsInSortOrder } from "@/lib/session-order";
 import { requirePlayer } from "@/lib/session";
 
 type NameBuckets = {
@@ -27,15 +25,6 @@ type NameBuckets = {
 
 function emptyBuckets(): NameBuckets {
   return { yes: [], maybe: [], no: [] };
-}
-
-function compareNullableTime(a: string | null, b: string | null) {
-  const aEmpty = !a?.trim();
-  const bEmpty = !b?.trim();
-  if (aEmpty && bEmpty) return 0;
-  if (aEmpty) return 1;
-  if (bEmpty) return -1;
-  return a!.localeCompare(b!);
 }
 
 export default async function AgendaPage() {
@@ -84,7 +73,7 @@ function PublishedAgenda({
   currentPlayerId: number;
 }) {
   const db = getDb();
-  const allSessions = db.select().from(sessions).all();
+  const sorted = listSessionsInSortOrder(db);
   const allPlayers = db.select().from(players).all();
   const allAvailability = db.select().from(availability).all();
 
@@ -97,7 +86,7 @@ function PublishedAgenda({
   }
 
   const namesBySession = new Map<number, NameBuckets>();
-  for (const session of allSessions) {
+  for (const session of sorted) {
     namesBySession.set(session.id, emptyBuckets());
   }
 
@@ -115,22 +104,6 @@ function PublishedAgenda({
       buckets[key].sort((a, b) => a.localeCompare(b, "de"));
     }
   }
-
-  const sorted = [...allSessions].sort((a, b) => {
-    const byDate = a.sessionDate.localeCompare(b.sessionDate);
-    if (byDate !== 0) return byDate;
-
-    const byTime = compareNullableTime(a.agendaStartTime, b.agendaStartTime);
-    if (byTime !== 0) return byTime;
-
-    const byOrder = a.sortOrder - b.sortOrder;
-    if (byOrder !== 0) return byOrder;
-
-    return (
-      (dayPartOrder[a.dayPart as DayPart] ?? 99) -
-      (dayPartOrder[b.dayPart as DayPart] ?? 99)
-    );
-  });
 
   if (sorted.length === 0) {
     return <p className="muted">Noch keine Termine im Programm.</p>;

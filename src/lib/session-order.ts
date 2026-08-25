@@ -1,20 +1,21 @@
 import { asc, eq, sql } from "drizzle-orm";
 import type { AppDb } from "./db";
-import { sessions } from "./schema";
+import { sessions, type Session } from "./schema";
 
-/** Stable list order for admin/plan; agenda may sort by clock time separately. */
+const sessionSortColumns = [
+  asc(sessions.sortOrder),
+  asc(sessions.sessionDate),
+  asc(sessions.agendaStartTime),
+  asc(sessions.id),
+] as const;
+
+/** Canonical display order across admin, plan, and agenda. */
+export function listSessionsInSortOrder(db: AppDb): Session[] {
+  return db.select().from(sessions).orderBy(...sessionSortColumns).all();
+}
+
 export function listSessionIdsInSortOrder(db: AppDb): number[] {
-  return db
-    .select({ id: sessions.id })
-    .from(sessions)
-    .orderBy(
-      asc(sessions.sortOrder),
-      asc(sessions.sessionDate),
-      asc(sessions.agendaStartTime),
-      asc(sessions.id),
-    )
-    .all()
-    .map((row) => row.id);
+  return listSessionsInSortOrder(db).map((row) => row.id);
 }
 
 /** 1-based position; 0 or invalid appends for new slots. */
@@ -72,9 +73,7 @@ export function placeSessionInOrder(
   requestedPosition: number,
   mode: "insert" | "update",
 ) {
-  const currentIds = listSessionIdsInSortOrder(db);
-  const baseIds =
-    mode === "update" ? currentIds.filter((id) => id !== sessionId) : currentIds;
+  const baseIds = listSessionIdsInSortOrder(db).filter((id) => id !== sessionId);
   const position = resolveSortPosition(requestedPosition, baseIds.length, mode);
   const orderedIds = [...baseIds];
   orderedIds.splice(position - 1, 0, sessionId);

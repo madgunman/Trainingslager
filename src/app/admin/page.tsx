@@ -9,10 +9,9 @@ import {
   availability,
   exerciseRequests,
   players,
-  sessions,
 } from "@/lib/schema";
 import { getSettings } from "@/lib/seed";
-import { nextDefaultSortOrder } from "@/lib/session-order";
+import { listSessionsInSortOrder, nextDefaultSortOrder } from "@/lib/session-order";
 import { requireAdmin } from "@/lib/session";
 
 function formatAgendaTimeRange(
@@ -30,11 +29,7 @@ export default async function AdminPage() {
 
   const db = getDb();
   const config = getSettings(db);
-  const allSessions = db
-    .select()
-    .from(sessions)
-    .orderBy(asc(sessions.sortOrder), asc(sessions.sessionDate))
-    .all();
+  const allSessions = listSessionsInSortOrder(db);
   const allPlayers = db.select().from(players).orderBy(asc(players.name)).all();
   const allAvailability = db.select().from(availability).all();
   const allRequests = db
@@ -119,7 +114,7 @@ export default async function AdminPage() {
             </div>
             <div className="admin-panel">
               <h3>Neuer Zeitslot</h3>
-              <SessionEditor defaultSortOrder={defaultSortOrder} />
+              <SessionEditor key={`new-${defaultSortOrder}`} defaultSortOrder={defaultSortOrder} />
             </div>
           </div>
         </section>
@@ -191,7 +186,10 @@ export default async function AdminPage() {
                       Slot bearbeiten
                     </summary>
                     <div style={{ marginTop: "0.85rem" }}>
-                      <SessionEditor session={session} />
+                      <SessionEditor
+                        key={`${session.id}-${session.sortOrder}`}
+                        session={session}
+                      />
                     </div>
                   </details>
                   <form
