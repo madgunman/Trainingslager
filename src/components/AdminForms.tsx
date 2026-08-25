@@ -59,7 +59,13 @@ export function SettingsForm({
   );
 }
 
-export function SessionEditor({ session }: { session?: Session }) {
+export function SessionEditor({
+  session,
+  defaultSortOrder = 1,
+}: {
+  session?: Session;
+  defaultSortOrder?: number;
+}) {
   const [state, action, pending] = useActionState(upsertSession, initial);
   const [sessionKind, setSessionKind] = useState<SessionKind>(
     session?.sessionKind ?? "training",
@@ -164,9 +170,14 @@ export function SessionEditor({ session }: { session?: Session }) {
         <input
           type="number"
           name="sortOrder"
-          defaultValue={session?.sortOrder ?? 0}
+          min={1}
+          defaultValue={session?.sortOrder ?? defaultSortOrder}
         />
       </label>
+      <p className="muted" style={{ margin: 0, fontSize: "0.88rem" }}>
+        Position in der Liste (1 = zuerst). Belegte Nummern schieben bestehende Slots
+        nach hinten.
+      </p>
       {state && !state.ok ? <p className="form-error">{state.error}</p> : null}
       {state?.ok ? <p className="form-ok">Zeitslot gespeichert.</p> : null}
       <button type="submit" className="btn-primary" disabled={pending}>

@@ -12,6 +12,7 @@ import {
   sessions,
 } from "@/lib/schema";
 import { getSettings } from "@/lib/seed";
+import { nextDefaultSortOrder } from "@/lib/session-order";
 import { requireAdmin } from "@/lib/session";
 
 function formatAgendaTimeRange(
@@ -50,6 +51,7 @@ export default async function AdminPage() {
 
   const playerNameById = new Map(allPlayers.map((p) => [p.id, p.name]));
   const agendaPublished = config.agendaPublished;
+  const defaultSortOrder = nextDefaultSortOrder(db);
 
   return (
     <>
@@ -117,7 +119,7 @@ export default async function AdminPage() {
             </div>
             <div className="admin-panel">
               <h3>Neuer Zeitslot</h3>
-              <SessionEditor />
+              <SessionEditor defaultSortOrder={defaultSortOrder} />
             </div>
           </div>
         </section>

@@ -32,18 +32,22 @@ export const players = sqliteTable("players", {
     .default(sql`(datetime('now'))`),
 });
 
-export const sessions = sqliteTable("sessions", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  title: text("title").notNull(),
-  sessionDate: text("session_date").notNull(),
-  dayPart: text("day_part", { enum: ["morning", "afternoon", "evening"] }).notNull(),
-  sessionKind: text("session_kind", { enum: SESSION_KINDS }).notNull().default("training"),
-  location: text("location").notNull().default("Halle am Kristanplatz"),
-  notes: text("notes").notNull().default(""),
-  sortOrder: integer("sort_order").notNull().default(0),
-  agendaStartTime: text("agenda_start_time"),
-  agendaEndTime: text("agenda_end_time"),
-});
+export const sessions = sqliteTable(
+  "sessions",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    title: text("title").notNull(),
+    sessionDate: text("session_date").notNull(),
+    dayPart: text("day_part", { enum: ["morning", "afternoon", "evening"] }).notNull(),
+    sessionKind: text("session_kind", { enum: SESSION_KINDS }).notNull().default("training"),
+    location: text("location").notNull().default("Halle am Kristanplatz"),
+    notes: text("notes").notNull().default(""),
+    sortOrder: integer("sort_order").notNull().default(1),
+    agendaStartTime: text("agenda_start_time"),
+    agendaEndTime: text("agenda_end_time"),
+  },
+  (table) => [uniqueIndex("sessions_sort_order_unique").on(table.sortOrder)],
+);
 
 export const availability = sqliteTable(
   "availability",

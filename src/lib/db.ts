@@ -71,10 +71,12 @@ function migrate(sqlite: Database.Database) {
         session_kind TEXT NOT NULL DEFAULT 'training' CHECK (session_kind IN ('training', 'warmup', 'wellness', 'travel', 'meal', 'other')),
         location TEXT NOT NULL DEFAULT 'Halle am Kristanplatz',
         notes TEXT NOT NULL DEFAULT '',
-        sort_order INTEGER NOT NULL DEFAULT 0,
+        sort_order INTEGER NOT NULL DEFAULT 1,
         agenda_start_time TEXT,
         agenda_end_time TEXT
       );
+
+      CREATE UNIQUE INDEX IF NOT EXISTS sessions_sort_order_unique ON sessions(sort_order);
 
       CREATE TABLE availability (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -117,6 +119,50 @@ function migrate(sqlite: Database.Database) {
   if (!settingsCols.includes("agenda_published")) {
     sqlite.exec(`ALTER TABLE settings ADD COLUMN agenda_published INTEGER NOT NULL DEFAULT 0`);
   }
+
+  ensureUniqueSessionSortOrders(sqlite);
+}
+
+function ensureUniqueSessionSortOrders(sqlite: Database.Database) {
+  const hasSessions = sqlite
+    .prepare(`SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'sessions'`)
+    .get();
+  if (!hasSessions) return;
+
+  const indexExists = sqlite
+    .prepare(
+      `SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'sessions_sort_order_unique'`,
+    )
+    .get();
+  const duplicateOrder = sqlite
+    .prepare(
+      `SELECT sort_order FROM sessions GROUP BY sort_order HAVING COUNT(*) > 1 LIMIT 1`,
+    )
+    .get();
+
+  if (indexExists && !duplicateOrder) return;
+
+  const rows = sqlite
+    .prepare(
+      `SELECT id FROM sessions
+       ORDER BY sort_order ASC, session_date ASC, COALESCE(agenda_start_time, '') ASC, id ASC`,
+    )
+    .all() as Array<{ id: number }>;
+
+  const assign = sqlite.prepare(`UPDATE sessions SET sort_order = ? WHERE id = ?`);
+  const renumber = sqlite.transaction((ordered: Array<{ id: number }>) => {
+    ordered.forEach((row, index) => {
+      assign.run(-(index + 1), row.id);
+    });
+    ordered.forEach((row, index) => {
+      assign.run(index + 1, row.id);
+    });
+  });
+  renumber(rows);
+
+  sqlite.exec(
+    `CREATE UNIQUE INDEX IF NOT EXISTS sessions_sort_order_unique ON sessions(sort_order)`,
+  );
 }
 
 export function getDb() {

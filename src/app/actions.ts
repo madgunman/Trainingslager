@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { getDb } from "@/lib/db";
 import { findAllowedPlayer } from "@/lib/allowed-players";
 import { parseAgendaTime } from "@/lib/format";
+import { placeSessionInOrder, renumberSessions, listSessionIdsInSortOrder, tempSortOrderForInsert } from "@/lib/session-order";
 import { getSettings, normalizeNameKey } from "@/lib/seed";
 import {
   availability,
@@ -262,7 +263,7 @@ export async function upsertSession(
   const dayPartRaw = String(formData.get("dayPart") || "").trim();
   const sessionKindRaw = String(formData.get("sessionKind") || "training").trim();
   const notes = String(formData.get("notes") || "").trim();
-  const sortOrder = Number(formData.get("sortOrder") || 0);
+  const requestedSortOrder = Number(formData.get("sortOrder") || 0);
   const agendaStartRaw = String(formData.get("agendaStartTime") || "");
   const agendaEndRaw = String(formData.get("agendaEndTime") || "");
   const parsedStart = parseAgendaTime(agendaStartRaw, "Agenda Start");
@@ -282,33 +283,31 @@ export async function upsertSession(
   const dayPart = dayPartRaw as "morning" | "afternoon" | "evening";
   const sessionKind = sessionKindRaw as SessionKind;
   const db = getDb();
+
+  const sessionFields = {
+    title,
+    sessionDate,
+    dayPart,
+    sessionKind,
+    notes,
+    agendaStartTime,
+    agendaEndTime,
+  };
+
   if (idRaw) {
+    const sessionId = Number(idRaw);
     db.update(sessions)
-      .set({
-        title,
-        sessionDate,
-        dayPart,
-        sessionKind,
-        notes,
-        sortOrder: Number.isFinite(sortOrder) ? sortOrder : 0,
-        agendaStartTime,
-        agendaEndTime,
-      })
-      .where(eq(sessions.id, Number(idRaw)))
+      .set(sessionFields)
+      .where(eq(sessions.id, sessionId))
       .run();
+    placeSessionInOrder(db, sessionId, requestedSortOrder, "update");
   } else {
-    db.insert(sessions)
-      .values({
-        title,
-        sessionDate,
-        dayPart,
-        sessionKind,
-        notes,
-        sortOrder: Number.isFinite(sortOrder) ? sortOrder : 0,
-        agendaStartTime,
-        agendaEndTime,
-      })
-      .run();
+    const inserted = db
+      .insert(sessions)
+      .values({ ...sessionFields, sortOrder: tempSortOrderForInsert(db) })
+      .returning()
+      .get();
+    placeSessionInOrder(db, inserted.id, requestedSortOrder, "insert");
   }
 
   revalidatePath("/plan");
@@ -323,6 +322,7 @@ export async function deleteSession(id: number) {
 
   const db = getDb();
   db.delete(sessions).where(eq(sessions.id, id)).run();
+  renumberSessions(db, listSessionIdsInSortOrder(db));
   revalidatePath("/plan");
   revalidatePath("/admin");
   revalidatePath("/agenda");
