@@ -71,12 +71,12 @@ function migrate(sqlite: Database.Database) {
         session_kind TEXT NOT NULL DEFAULT 'training' CHECK (session_kind IN ('training', 'warmup', 'wellness', 'travel', 'meal', 'other')),
         location TEXT NOT NULL DEFAULT 'Halle am Kristanplatz',
         notes TEXT NOT NULL DEFAULT '',
-        sort_order INTEGER NOT NULL DEFAULT 1,
+        list_position INTEGER NOT NULL DEFAULT 1,
         agenda_start_time TEXT,
         agenda_end_time TEXT
       );
 
-      CREATE UNIQUE INDEX IF NOT EXISTS sessions_sort_order_unique ON sessions(sort_order);
+      CREATE UNIQUE INDEX IF NOT EXISTS sessions_list_position_unique ON sessions(list_position);
 
       CREATE TABLE availability (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -120,37 +120,47 @@ function migrate(sqlite: Database.Database) {
     sqlite.exec(`ALTER TABLE settings ADD COLUMN agenda_published INTEGER NOT NULL DEFAULT 0`);
   }
 
-  ensureUniqueSessionSortOrders(sqlite);
+  migrateSessionListPosition(sqlite);
 }
 
-function ensureUniqueSessionSortOrders(sqlite: Database.Database) {
+function migrateSessionListPosition(sqlite: Database.Database) {
   const hasSessions = sqlite
     .prepare(`SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'sessions'`)
     .get();
   if (!hasSessions) return;
 
+  const sessionCols = tableColumns(sqlite, "sessions").map((c) => c.name);
+  if (sessionCols.includes("sort_order") && !sessionCols.includes("list_position")) {
+    sqlite.exec(`DROP INDEX IF EXISTS sessions_sort_order_unique`);
+    sqlite.exec(`ALTER TABLE sessions RENAME COLUMN sort_order TO list_position`);
+  }
+
+  ensureUniqueListPositions(sqlite);
+}
+
+function ensureUniqueListPositions(sqlite: Database.Database) {
   const indexExists = sqlite
     .prepare(
-      `SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'sessions_sort_order_unique'`,
+      `SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'sessions_list_position_unique'`,
     )
     .get();
-  const duplicateOrder = sqlite
+  const duplicatePosition = sqlite
     .prepare(
-      `SELECT sort_order FROM sessions GROUP BY sort_order HAVING COUNT(*) > 1 LIMIT 1`,
+      `SELECT list_position FROM sessions GROUP BY list_position HAVING COUNT(*) > 1 LIMIT 1`,
     )
     .get();
 
-  if (indexExists && !duplicateOrder) return;
+  if (indexExists && !duplicatePosition) return;
 
   const rows = sqlite
     .prepare(
       `SELECT id FROM sessions
-       ORDER BY sort_order ASC, session_date ASC, COALESCE(agenda_start_time, '') ASC, id ASC`,
+       ORDER BY list_position ASC, session_date ASC, COALESCE(agenda_start_time, '') ASC, id ASC`,
     )
     .all() as Array<{ id: number }>;
 
-  const assign = sqlite.prepare(`UPDATE sessions SET sort_order = ? WHERE id = ?`);
-  const renumber = sqlite.transaction((ordered: Array<{ id: number }>) => {
+  const assign = sqlite.prepare(`UPDATE sessions SET list_position = ? WHERE id = ?`);
+  const compact = sqlite.transaction((ordered: Array<{ id: number }>) => {
     ordered.forEach((row, index) => {
       assign.run(-(index + 1), row.id);
     });
@@ -158,10 +168,11 @@ function ensureUniqueSessionSortOrders(sqlite: Database.Database) {
       assign.run(index + 1, row.id);
     });
   });
-  renumber(rows);
+  compact(rows);
 
+  sqlite.exec(`DROP INDEX IF EXISTS sessions_sort_order_unique`);
   sqlite.exec(
-    `CREATE UNIQUE INDEX IF NOT EXISTS sessions_sort_order_unique ON sessions(sort_order)`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS sessions_list_position_unique ON sessions(list_position)`,
   );
 }
 

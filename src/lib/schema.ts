@@ -42,11 +42,11 @@ export const sessions = sqliteTable(
     sessionKind: text("session_kind", { enum: SESSION_KINDS }).notNull().default("training"),
     location: text("location").notNull().default("Halle am Kristanplatz"),
     notes: text("notes").notNull().default(""),
-    sortOrder: integer("sort_order").notNull().default(1),
+    listPosition: integer("list_position").notNull().default(1),
     agendaStartTime: text("agenda_start_time"),
     agendaEndTime: text("agenda_end_time"),
   },
-  (table) => [uniqueIndex("sessions_sort_order_unique").on(table.sortOrder)],
+  (table) => [uniqueIndex("sessions_list_position_unique").on(table.listPosition)],
 );
 
 export const availability = sqliteTable(

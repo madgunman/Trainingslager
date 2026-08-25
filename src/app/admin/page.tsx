@@ -1,17 +1,18 @@
 import { asc, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
-import { deleteSession, publishAgenda, unpublishAgenda } from "@/app/actions";
+import { publishAgenda, unpublishAgenda } from "@/app/actions";
+import { AdminSessionSlotList, type AdminSessionSlot } from "@/components/AdminSessionSlotList";
 import { SessionEditor, SettingsForm } from "@/components/AdminForms";
 import { SiteHeader } from "@/components/SiteHeader";
 import { getDb } from "@/lib/db";
-import { formatSessionDay, formatSessionSlot, isTrainingSession, sessionKindLabels, statusLabels } from "@/lib/format";
+import { formatSessionDay, formatSessionSlot, isTrainingSession, sessionKindLabels } from "@/lib/format";
 import {
   availability,
   exerciseRequests,
   players,
 } from "@/lib/schema";
 import { getSettings } from "@/lib/seed";
-import { listSessionsInSortOrder, nextDefaultSortOrder } from "@/lib/session-order";
+import { listSessionsInListOrder } from "@/lib/session-list";
 import { requireAdmin } from "@/lib/session";
 
 function formatAgendaTimeRange(
@@ -29,7 +30,7 @@ export default async function AdminPage() {
 
   const db = getDb();
   const config = getSettings(db);
-  const allSessions = listSessionsInSortOrder(db);
+  const allSessions = listSessionsInListOrder(db);
   const allPlayers = db.select().from(players).orderBy(asc(players.name)).all();
   const allAvailability = db.select().from(availability).all();
   const allRequests = db
@@ -46,7 +47,39 @@ export default async function AdminPage() {
 
   const playerNameById = new Map(allPlayers.map((p) => [p.id, p.name]));
   const agendaPublished = config.agendaPublished;
-  const defaultSortOrder = nextDefaultSortOrder(db);
+
+  const adminSlots: AdminSessionSlot[] = allSessions.map((session) => {
+    const topic = session.notes.trim() !== "" ? session.notes : session.title;
+    const kindLabel = sessionKindLabels[session.sessionKind];
+    const heading = isTrainingSession(session.sessionKind)
+      ? formatSessionSlot(session.sessionDate, session.dayPart)
+      : `${formatSessionDay(session.sessionDate)} · ${formatAgendaTimeRange(
+          session.agendaStartTime,
+          session.agendaEndTime,
+        )} · ${topic}`;
+
+    const responses = allAvailability
+      .filter((row) => row.sessionId === session.id)
+      .map((row) => ({
+        playerName: playerNameById.get(row.playerId) ?? "Unbekannt",
+        status: row.status,
+      }));
+
+    return {
+      id: session.id,
+      title: session.title,
+      sessionDate: session.sessionDate,
+      dayPart: session.dayPart,
+      sessionKind: session.sessionKind,
+      notes: session.notes,
+      location: session.location,
+      agendaStartTime: session.agendaStartTime,
+      agendaEndTime: session.agendaEndTime,
+      heading,
+      kindLabel,
+      responses,
+    };
+  });
 
   return (
     <>
@@ -114,7 +147,10 @@ export default async function AdminPage() {
             </div>
             <div className="admin-panel">
               <h3>Neuer Zeitslot</h3>
-              <SessionEditor key={`new-${defaultSortOrder}`} defaultSortOrder={defaultSortOrder} />
+              <p className="muted" style={{ marginTop: 0 }}>
+                Neue Slots erscheinen unten in der Liste.
+              </p>
+              <SessionEditor key={`new-${allSessions.length}`} />
             </div>
           </div>
         </section>
@@ -127,83 +163,10 @@ export default async function AdminPage() {
               · {allSessions.length} Slots gesamt
             </p>
           </div>
-          <div className="admin-stack">
-            {allSessions.map((session) => {
-              const responses = allAvailability.filter((a) => a.sessionId === session.id);
-              const kindLabel = sessionKindLabels[session.sessionKind];
-              const topic =
-                session.notes.trim() !== "" ? session.notes : session.title;
-              const slotHeading = isTrainingSession(session.sessionKind)
-                ? formatSessionSlot(session.sessionDate, session.dayPart)
-                : `${formatSessionDay(session.sessionDate)} · ${formatAgendaTimeRange(
-                    session.agendaStartTime,
-                    session.agendaEndTime,
-                  )} · ${topic}`;
-              return (
-                <article key={session.id} className="admin-panel">
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", alignItems: "center" }}>
-                    <span className="pill pill-maybe admin-kind-badge">{kindLabel}</span>
-                    <h3 style={{ margin: 0 }}>{slotHeading}</h3>
-                  </div>
-                  {isTrainingSession(session.sessionKind) ? (
-                    <p className="muted">{session.title}</p>
-                  ) : null}
-                  {session.notes ? <p className="muted">{session.notes}</p> : null}
-
-                  <div style={{ margin: "1rem 0" }}>
-                    <table className="rsvp-table">
-                      <thead>
-                        <tr>
-                          <th>Spieler</th>
-                          <th>Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {responses.length === 0 ? (
-                          <tr>
-                            <td colSpan={2} className="muted">
-                              Noch keine Rückmeldungen
-                            </td>
-                          </tr>
-                        ) : (
-                          responses.map((row) => (
-                            <tr key={row.id}>
-                              <td>{playerNameById.get(row.playerId) ?? "Unbekannt"}</td>
-                              <td>
-                                <span className={`pill pill-${row.status}`}>
-                                  {statusLabels[row.status]}
-                                </span>
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  <details>
-                    <summary style={{ cursor: "pointer", fontWeight: 600 }}>
-                      Slot bearbeiten
-                    </summary>
-                    <div style={{ marginTop: "0.85rem" }}>
-                      <SessionEditor
-                        key={`${session.id}-${session.sortOrder}`}
-                        session={session}
-                      />
-                    </div>
-                  </details>
-                  <form
-                    action={deleteSession.bind(null, session.id)}
-                    style={{ marginTop: "0.75rem" }}
-                  >
-                    <button type="submit" className="btn-danger">
-                      Slot löschen
-                    </button>
-                  </form>
-                </article>
-              );
-            })}
-          </div>
+          <AdminSessionSlotList
+            key={allSessions.map((session) => `${session.listPosition}-${session.id}`).join("|")}
+            slots={adminSlots}
+          />
         </section>
 
         <section className="section">

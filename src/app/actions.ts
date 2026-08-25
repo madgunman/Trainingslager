@@ -7,7 +7,7 @@ import { redirect } from "next/navigation";
 import { getDb } from "@/lib/db";
 import { findAllowedPlayer } from "@/lib/allowed-players";
 import { parseAgendaTime } from "@/lib/format";
-import { placeSessionInOrder, renumberSessions, listSessionIdsInSortOrder, tempSortOrderForInsert } from "@/lib/session-order";
+import { appendListPosition, applyListOrder, compactListAfterDelete, listSessionIds, listSessionsInListOrder } from "@/lib/session-list";
 import { getSettings, normalizeNameKey } from "@/lib/seed";
 import {
   availability,
@@ -263,7 +263,6 @@ export async function upsertSession(
   const dayPartRaw = String(formData.get("dayPart") || "").trim();
   const sessionKindRaw = String(formData.get("sessionKind") || "training").trim();
   const notes = String(formData.get("notes") || "").trim();
-  const requestedSortOrder = Number(formData.get("sortOrder") || 0);
   const agendaStartRaw = String(formData.get("agendaStartTime") || "");
   const agendaEndRaw = String(formData.get("agendaEndTime") || "");
   const parsedStart = parseAgendaTime(agendaStartRaw, "Agenda Start");
@@ -295,21 +294,38 @@ export async function upsertSession(
   };
 
   if (idRaw) {
-    const sessionId = Number(idRaw);
     db.update(sessions)
       .set(sessionFields)
-      .where(eq(sessions.id, sessionId))
+      .where(eq(sessions.id, Number(idRaw)))
       .run();
-    placeSessionInOrder(db, sessionId, requestedSortOrder, "update");
   } else {
-    const inserted = db
-      .insert(sessions)
-      .values({ ...sessionFields, sortOrder: tempSortOrderForInsert(db) })
-      .returning()
-      .get();
-    placeSessionInOrder(db, inserted.id, requestedSortOrder, "insert");
+    db.insert(sessions)
+      .values({ ...sessionFields, listPosition: appendListPosition(db) })
+      .run();
   }
 
+  revalidatePath("/plan");
+  revalidatePath("/admin");
+  revalidatePath("/agenda");
+  return { ok: true };
+}
+
+export async function reorderSessionSlots(orderedIds: number[]): Promise<ActionResult> {
+  const admin = await requireAdmin();
+  if (!admin) return { ok: false, error: "Keine Berechtigung." };
+
+  const db = getDb();
+  const existing = listSessionIds(db);
+  const unique = new Set(orderedIds);
+  if (
+    orderedIds.length !== existing.length ||
+    unique.size !== orderedIds.length ||
+    !orderedIds.every((id) => existing.includes(id))
+  ) {
+    return { ok: false, error: "Ungültige Anordnung." };
+  }
+
+  applyListOrder(db, orderedIds);
   revalidatePath("/plan");
   revalidatePath("/admin");
   revalidatePath("/agenda");
@@ -322,7 +338,7 @@ export async function deleteSession(id: number) {
 
   const db = getDb();
   db.delete(sessions).where(eq(sessions.id, id)).run();
-  renumberSessions(db, listSessionIdsInSortOrder(db));
+  compactListAfterDelete(db);
   revalidatePath("/plan");
   revalidatePath("/admin");
   revalidatePath("/agenda");
@@ -330,7 +346,7 @@ export async function deleteSession(id: number) {
 
 export async function getPlanData(playerId: number) {
   const db = getDb();
-  const allSessions = db.select().from(sessions).orderBy(asc(sessions.sortOrder), asc(sessions.sessionDate)).all();
+  const allSessions = listSessionsInListOrder(db);
   const myAvailability = db
     .select()
     .from(availability)

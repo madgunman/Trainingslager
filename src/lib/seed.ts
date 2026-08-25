@@ -56,28 +56,28 @@ function seedSampleSessions(db: AppDb) {
       sessionDate: "2026-08-28",
       dayPart: "evening" as const,
       notes: "Freitagabend – Anreise und erstes Training",
-      sortOrder: 1,
+      listPosition: 1,
     },
     {
       title: "Training",
       sessionDate: "2026-08-29",
       dayPart: "morning" as const,
       notes: "Samstag Vormittag – ggf. zwei Gruppen",
-      sortOrder: 2,
+      listPosition: 2,
     },
     {
       title: "Training",
       sessionDate: "2026-08-29",
       dayPart: "afternoon" as const,
       notes: "Samstag Nachmittag – ggf. zwei Gruppen",
-      sortOrder: 3,
+      listPosition: 3,
     },
     {
       title: "Training",
       sessionDate: "2026-08-30",
       dayPart: "morning" as const,
       notes: "Sonntag Vormittag – Abschluss",
-      sortOrder: 4,
+      listPosition: 4,
     },
   ];
 

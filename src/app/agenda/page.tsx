@@ -14,7 +14,7 @@ import {
   type AvailabilityStatus,
 } from "@/lib/schema";
 import { getSettings } from "@/lib/seed";
-import { listSessionsInSortOrder } from "@/lib/session-order";
+import { listSessionsInListOrder } from "@/lib/session-list";
 import { requirePlayer } from "@/lib/session";
 
 type NameBuckets = {
@@ -73,7 +73,7 @@ function PublishedAgenda({
   currentPlayerId: number;
 }) {
   const db = getDb();
-  const sorted = listSessionsInSortOrder(db);
+  const sorted = listSessionsInListOrder(db);
   const allPlayers = db.select().from(players).all();
   const allAvailability = db.select().from(availability).all();
 
