@@ -35,7 +35,8 @@ function migrate(sqlite: Database.Database) {
       invite_code TEXT NOT NULL,
       admin_password_hash TEXT NOT NULL,
       weekend_title TEXT NOT NULL,
-      weekend_subtitle TEXT NOT NULL
+      weekend_subtitle TEXT NOT NULL,
+      agenda_published INTEGER NOT NULL DEFAULT 0
     );
 
     CREATE TABLE IF NOT EXISTS players (
@@ -69,7 +70,9 @@ function migrate(sqlite: Database.Database) {
         day_part TEXT NOT NULL CHECK (day_part IN ('morning', 'afternoon', 'evening')),
         location TEXT NOT NULL DEFAULT 'Halle am Kristanplatz',
         notes TEXT NOT NULL DEFAULT '',
-        sort_order INTEGER NOT NULL DEFAULT 0
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        agenda_start_time TEXT,
+        agenda_end_time TEXT
       );
 
       CREATE TABLE availability (
@@ -92,6 +95,20 @@ function migrate(sqlite: Database.Database) {
         UNIQUE(player_id, session_id)
       );
     `);
+  }
+
+  // Additive columns for existing DBs (and after rebuild, PRAGMA may already include them).
+  const sessionColsAfter = tableColumns(sqlite, "sessions").map((c) => c.name);
+  if (!sessionColsAfter.includes("agenda_start_time")) {
+    sqlite.exec(`ALTER TABLE sessions ADD COLUMN agenda_start_time TEXT`);
+  }
+  if (!sessionColsAfter.includes("agenda_end_time")) {
+    sqlite.exec(`ALTER TABLE sessions ADD COLUMN agenda_end_time TEXT`);
+  }
+
+  const settingsCols = tableColumns(sqlite, "settings").map((c) => c.name);
+  if (!settingsCols.includes("agenda_published")) {
+    sqlite.exec(`ALTER TABLE settings ADD COLUMN agenda_published INTEGER NOT NULL DEFAULT 0`);
   }
 }
 

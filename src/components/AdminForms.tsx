@@ -85,6 +85,24 @@ export function SessionEditor({ session }: { session?: Session }) {
           </select>
         </label>
       </div>
+      <div className="field-row">
+        <label className="field">
+          <span>Agenda Start</span>
+          <input
+            type="time"
+            name="agendaStartTime"
+            defaultValue={session?.agendaStartTime ?? ""}
+          />
+        </label>
+        <label className="field">
+          <span>Agenda Ende</span>
+          <input
+            type="time"
+            name="agendaEndTime"
+            defaultValue={session?.agendaEndTime ?? ""}
+          />
+        </label>
+      </div>
       <label className="field">
         <span>Notizen</span>
         <textarea name="notes" rows={2} defaultValue={session?.notes ?? ""} />

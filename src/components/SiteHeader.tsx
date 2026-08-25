@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { logout } from "@/app/actions";
+import { PlayerNav } from "@/components/PlayerNav";
 
 export function SiteHeader({
   title,
@@ -30,6 +31,7 @@ export function SiteHeader({
             <p className="brand-tag">{title}</p>
           </div>
         </Link>
+        {playerName ? <PlayerNav /> : null}
         <div className="header-meta">
           {subtitle ? <p className="header-sub">{subtitle}</p> : null}
           {playerName ? <p className="header-user">Hallo, {playerName}</p> : null}

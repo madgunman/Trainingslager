@@ -10,6 +10,7 @@ export const settings = sqliteTable("settings", {
   adminPasswordHash: text("admin_password_hash").notNull(),
   weekendTitle: text("weekend_title").notNull(),
   weekendSubtitle: text("weekend_subtitle").notNull(),
+  agendaPublished: integer("agenda_published", { mode: "boolean" }).notNull().default(false),
 });
 
 export const players = sqliteTable("players", {
@@ -29,6 +30,8 @@ export const sessions = sqliteTable("sessions", {
   location: text("location").notNull().default("Halle am Kristanplatz"),
   notes: text("notes").notNull().default(""),
   sortOrder: integer("sort_order").notNull().default(0),
+  agendaStartTime: text("agenda_start_time"),
+  agendaEndTime: text("agenda_end_time"),
 });
 
 export const availability = sqliteTable(

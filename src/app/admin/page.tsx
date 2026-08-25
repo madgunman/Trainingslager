@@ -1,10 +1,10 @@
 import { asc, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
-import { deleteSession } from "@/app/actions";
+import { deleteSession, publishAgenda, unpublishAgenda } from "@/app/actions";
 import { SessionEditor, SettingsForm } from "@/components/AdminForms";
 import { SiteHeader } from "@/components/SiteHeader";
 import { getDb } from "@/lib/db";
-import { formatSessionSlot, statusLabels } from "@/lib/format";
+import { formatSessionDay, formatSessionSlot, statusLabels } from "@/lib/format";
 import {
   availability,
   exerciseRequests,
@@ -13,6 +13,15 @@ import {
 } from "@/lib/schema";
 import { getSettings } from "@/lib/seed";
 import { requireAdmin } from "@/lib/session";
+
+function formatAgendaTimeRange(
+  start: string | null,
+  end: string | null,
+): string {
+  if (!start && !end) return "ohne Uhrzeit";
+  if (start && end) return `${start}–${end}`;
+  return start || end || "ohne Uhrzeit";
+}
 
 export default async function AdminPage() {
   const admin = await requireAdmin();
@@ -40,6 +49,7 @@ export default async function AdminPage() {
     .all();
 
   const playerNameById = new Map(allPlayers.map((p) => [p.id, p.name]));
+  const agendaPublished = config.agendaPublished;
 
   return (
     <>
@@ -49,6 +59,50 @@ export default async function AdminPage() {
           <div className="section-head">
             <h2>Wochenende steuern</h2>
             <p>Zeitplan pflegen, Rückmeldungen und Übungswünsche im Blick behalten.</p>
+          </div>
+          <div className="admin-panel" style={{ marginBottom: "1rem" }}>
+            <h3>Programm</h3>
+            <p>
+              Status:{" "}
+              <strong>{agendaPublished ? "Veröffentlicht" : "Entwurf"}</strong>
+            </p>
+            <p className="muted">
+              Das Spieler-Programm zeigt Datum, Uhrzeit und Thema. Veröffentlichen
+              ist auch möglich, wenn noch nicht alle Slots eine Uhrzeit haben.
+            </p>
+            {allSessions.length === 0 ? (
+              <p className="muted">Noch keine Zeitslots für die Vorschau.</p>
+            ) : (
+              <ul style={{ margin: "0.75rem 0 1rem", paddingLeft: "1.1rem" }}>
+                {allSessions.map((session) => {
+                  const topic =
+                    session.notes.trim() !== "" ? session.notes : session.title;
+                  return (
+                    <li key={session.id}>
+                      {formatSessionDay(session.sessionDate)} ·{" "}
+                      {formatAgendaTimeRange(
+                        session.agendaStartTime,
+                        session.agendaEndTime,
+                      )}{" "}
+                      · {topic}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            {agendaPublished ? (
+              <form action={unpublishAgenda}>
+                <button type="submit" className="btn-danger">
+                  Programm zurückziehen
+                </button>
+              </form>
+            ) : (
+              <form action={publishAgenda}>
+                <button type="submit" className="btn-primary">
+                  Programm veröffentlichen
+                </button>
+              </form>
+            )}
           </div>
           <div className="admin-grid">
             <div className="admin-panel">

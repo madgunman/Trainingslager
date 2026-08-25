@@ -126,6 +126,7 @@ export async function setAvailability(sessionId: number, status: AvailabilitySta
 
   revalidatePath("/plan");
   revalidatePath("/admin");
+  revalidatePath("/agenda");
 }
 
 export async function createExerciseRequest(
@@ -215,6 +216,36 @@ export async function saveWeekendSettings(
   return { ok: true };
 }
 
+export async function publishAgenda() {
+  const admin = await requireAdmin();
+  if (!admin) redirect("/admin/login");
+
+  const db = getDb();
+  const config = getSettings(db);
+  db.update(settings)
+    .set({ agendaPublished: true })
+    .where(eq(settings.id, config.id))
+    .run();
+
+  revalidatePath("/admin");
+  revalidatePath("/agenda");
+}
+
+export async function unpublishAgenda() {
+  const admin = await requireAdmin();
+  if (!admin) redirect("/admin/login");
+
+  const db = getDb();
+  const config = getSettings(db);
+  db.update(settings)
+    .set({ agendaPublished: false })
+    .where(eq(settings.id, config.id))
+    .run();
+
+  revalidatePath("/admin");
+  revalidatePath("/agenda");
+}
+
 export async function upsertSession(
   _prev: ActionResult | null,
   formData: FormData,
@@ -228,6 +259,10 @@ export async function upsertSession(
   const dayPartRaw = String(formData.get("dayPart") || "").trim();
   const notes = String(formData.get("notes") || "").trim();
   const sortOrder = Number(formData.get("sortOrder") || 0);
+  const agendaStartRaw = String(formData.get("agendaStartTime") || "").trim();
+  const agendaEndRaw = String(formData.get("agendaEndTime") || "").trim();
+  const agendaStartTime = agendaStartRaw || null;
+  const agendaEndTime = agendaEndRaw || null;
 
   if (!sessionDate || !["morning", "afternoon", "evening"].includes(dayPartRaw)) {
     return { ok: false, error: "Datum und Tageszeit sind Pflicht." };
@@ -243,6 +278,8 @@ export async function upsertSession(
         dayPart,
         notes,
         sortOrder: Number.isFinite(sortOrder) ? sortOrder : 0,
+        agendaStartTime,
+        agendaEndTime,
       })
       .where(eq(sessions.id, Number(idRaw)))
       .run();
@@ -254,12 +291,15 @@ export async function upsertSession(
         dayPart,
         notes,
         sortOrder: Number.isFinite(sortOrder) ? sortOrder : 0,
+        agendaStartTime,
+        agendaEndTime,
       })
       .run();
   }
 
   revalidatePath("/plan");
   revalidatePath("/admin");
+  revalidatePath("/agenda");
   return { ok: true };
 }
 
@@ -271,6 +311,7 @@ export async function deleteSession(id: number) {
   db.delete(sessions).where(eq(sessions.id, id)).run();
   revalidatePath("/plan");
   revalidatePath("/admin");
+  revalidatePath("/agenda");
 }
 
 export async function getPlanData(playerId: number) {

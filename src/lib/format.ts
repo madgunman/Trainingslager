@@ -22,6 +22,18 @@ export function formatSessionSlot(dateIso: string, dayPart: DayPart) {
   return `${formatSessionDay(dateIso)} · ${dayPartLabels[dayPart]}`;
 }
 
+/** Clock range for agenda cards; null when neither time is set. */
+export function formatAgendaTimeRange(
+  start: string | null | undefined,
+  end: string | null | undefined,
+): string | null {
+  const s = start?.trim() || "";
+  const e = end?.trim() || "";
+  if (!s && !e) return null;
+  if (s && e) return `${s}–${e}`;
+  return s || e || null;
+}
+
 export const statusLabels = {
   yes: "Dabei",
   no: "Absage",
