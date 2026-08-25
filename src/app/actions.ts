@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getDb } from "@/lib/db";
 import { findAllowedPlayer } from "@/lib/allowed-players";
+import { parseAgendaTime } from "@/lib/format";
 import { getSettings, normalizeNameKey } from "@/lib/seed";
 import {
   availability,
@@ -262,10 +263,14 @@ export async function upsertSession(
   const sessionKindRaw = String(formData.get("sessionKind") || "training").trim();
   const notes = String(formData.get("notes") || "").trim();
   const sortOrder = Number(formData.get("sortOrder") || 0);
-  const agendaStartRaw = String(formData.get("agendaStartTime") || "").trim();
-  const agendaEndRaw = String(formData.get("agendaEndTime") || "").trim();
-  const agendaStartTime = agendaStartRaw || null;
-  const agendaEndTime = agendaEndRaw || null;
+  const agendaStartRaw = String(formData.get("agendaStartTime") || "");
+  const agendaEndRaw = String(formData.get("agendaEndTime") || "");
+  const parsedStart = parseAgendaTime(agendaStartRaw, "Agenda Start");
+  if (!parsedStart.ok) return { ok: false, error: parsedStart.error };
+  const parsedEnd = parseAgendaTime(agendaEndRaw, "Agenda Ende");
+  if (!parsedEnd.ok) return { ok: false, error: parsedEnd.error };
+  const agendaStartTime = parsedStart.value;
+  const agendaEndTime = parsedEnd.value;
 
   if (!sessionDate || !["morning", "afternoon", "evening"].includes(dayPartRaw)) {
     return { ok: false, error: "Datum und Tageszeit sind Pflicht." };

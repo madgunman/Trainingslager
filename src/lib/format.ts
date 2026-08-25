@@ -35,6 +35,34 @@ export function formatSessionSlot(dateIso: string, dayPart: DayPart) {
   return `${formatSessionDay(dateIso)} · ${dayPartLabels[dayPart]}`;
 }
 
+/** Parse admin agenda time; empty string → null. Allows end before start (next day). */
+export function parseAgendaTime(
+  raw: string,
+  fieldLabel: string,
+): { ok: true; value: string | null } | { ok: false; error: string } {
+  const trimmed = raw.trim();
+  if (!trimmed) return { ok: true, value: null };
+
+  const match = trimmed.match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) {
+    return {
+      ok: false,
+      error: `${fieldLabel}: Bitte Uhrzeit als HH:MM eingeben (z.B. 18:00).`,
+    };
+  }
+
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (hours > 23 || minutes > 59) {
+    return { ok: false, error: `${fieldLabel}: Ungültige Uhrzeit.` };
+  }
+
+  return {
+    ok: true,
+    value: `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`,
+  };
+}
+
 /** Clock range for agenda cards; null when neither time is set. */
 export function formatAgendaTimeRange(
   start: string | null | undefined,

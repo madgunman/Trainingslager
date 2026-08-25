@@ -130,20 +130,31 @@ export function SessionEditor({ session }: { session?: Session }) {
         <label className="field">
           <span>Agenda Start</span>
           <input
-            type="time"
+            type="text"
             name="agendaStartTime"
             defaultValue={session?.agendaStartTime ?? ""}
+            placeholder="18:00"
+            inputMode="numeric"
+            autoComplete="off"
+            spellCheck={false}
           />
         </label>
         <label className="field">
           <span>Agenda Ende</span>
           <input
-            type="time"
+            type="text"
             name="agendaEndTime"
             defaultValue={session?.agendaEndTime ?? ""}
+            placeholder="20:30"
+            inputMode="numeric"
+            autoComplete="off"
+            spellCheck={false}
           />
         </label>
       </div>
+      <p className="muted" style={{ margin: 0, fontSize: "0.88rem" }}>
+        Format HH:MM. Ende vor Start ist erlaubt (nächster Tag, z.B. 18:00–08:30).
+      </p>
       <label className="field">
         <span>Notizen</span>
         <textarea name="notes" rows={2} defaultValue={session?.notes ?? ""} />
